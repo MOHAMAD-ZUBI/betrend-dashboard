@@ -129,7 +129,9 @@ export default function App({ apiData }: { apiData: UserData[] }) {
           <Chip
             className="capitalize"
             //@ts-ignore
-            color={statusColorMap[true]}
+            color={
+              user.isVerified ? statusColorMap[true] : statusColorMap[false]
+            }
             size="sm"
             variant="flat"
           >
@@ -138,11 +140,11 @@ export default function App({ apiData }: { apiData: UserData[] }) {
         );
       case "actions":
         return (
-          <div className="relative flex justify-end items-center gap-2">
+          <div className="relative flex justify-start items-center gap-2">
             <Dropdown>
               <DropdownTrigger>
-                <Button isIconOnly size="sm" variant="light">
-                  <span className="text-default-300">...</span>
+                <Button isIconOnly size="sm" variant="ghost">
+                  <span className="text-green-500">...</span>
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
@@ -201,12 +203,14 @@ export default function App({ apiData }: { apiData: UserData[] }) {
             className="w-full sm:max-w-[44%]"
             placeholder="Search by name..."
             value={filterValue}
-            color="primary"
+            color="success"
             onClear={onClear}
             onValueChange={onSearchChange}
           />
           <div className="flex gap-3">
-            <Button color="primary">Add New</Button>
+            <Button color="success" className="text-white">
+              Add New
+            </Button>
           </div>
         </div>
         <div className="flex justify-between items-center mb-4">
@@ -246,19 +250,25 @@ export default function App({ apiData }: { apiData: UserData[] }) {
         <Pagination
           isCompact
           showControls
-          showShadow
-          color="primary"
+          color="success"
           page={page}
           total={pages}
           onChange={setPage}
         />
         <div className="hidden sm:flex w-[30%] justify-end gap-2">
-          <Button isDisabled={pages === 1} onClick={onPreviousPage}>
+          <Button
+            isDisabled={pages === 1}
+            onClick={onPreviousPage}
+            color="success"
+            className=" text-white"
+          >
             Previous
           </Button>
           <Button
             isDisabled={pages === 1 || page === pages}
             onClick={onNextPage}
+            color="success"
+            className=" text-white"
           >
             Next
           </Button>
