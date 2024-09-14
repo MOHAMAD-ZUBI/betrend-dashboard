@@ -17,6 +17,7 @@ import {
   User,
   Pagination,
 } from "@nextui-org/react";
+import * as XLSX from "xlsx";
 
 // Define types for the user and permissions
 interface Permissions {
@@ -194,6 +195,18 @@ export default function App({ apiData }: { apiData: UserData[] }) {
     setPage(1);
   }, []);
 
+  const handleExport = useCallback(() => {
+    // Convert the data to a format that can be used by XLSX
+    const worksheet = XLSX.utils.json_to_sheet(filteredItems, {
+      header: headerColumns.map((col) => col.key),
+    });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+
+    // Create an Excel file and trigger the download
+    XLSX.writeFile(workbook, "UsersData.xlsx");
+  }, [filteredItems]);
+
   const topContent = useMemo(() => {
     return (
       <div className="flex flex-col gap-4">
@@ -210,6 +223,13 @@ export default function App({ apiData }: { apiData: UserData[] }) {
           <div className="flex gap-3">
             <Button color="success" className="text-white">
               Add New
+            </Button>
+            <Button
+              color="primary"
+              onClick={handleExport}
+              className="text-white"
+            >
+              Export to Excel
             </Button>
           </div>
         </div>
@@ -237,6 +257,7 @@ export default function App({ apiData }: { apiData: UserData[] }) {
     apiData.length,
     onSearchChange,
     onClear,
+    handleExport,
   ]);
 
   const bottomContent = useMemo(() => {
@@ -265,10 +286,10 @@ export default function App({ apiData }: { apiData: UserData[] }) {
             Previous
           </Button>
           <Button
-            isDisabled={pages === 1 || page === pages}
+            isDisabled={pages === 1}
             onClick={onNextPage}
             color="success"
-            className=" text-white"
+            className="text-white"
           >
             Next
           </Button>
@@ -278,7 +299,7 @@ export default function App({ apiData }: { apiData: UserData[] }) {
   }, [
     page,
     pages,
-    selectedKeys,
+    selectedKeys.size,
     filteredItems.length,
     onNextPage,
     onPreviousPage,
@@ -288,18 +309,19 @@ export default function App({ apiData }: { apiData: UserData[] }) {
     <div className="p-4">
       {topContent}
       <Table aria-label="Table with multiple selectable rows">
-        <TableHeader>
-          {headerColumns.map((column) => (
-            //@ts-ignore
-            <TableColumn key={column.key} title={column.title} />
-          ))}
+        <TableHeader columns={headerColumns}>
+          {(column) => (
+            <TableColumn key={column.key} allowSorting={column.allowSorting}>
+              {column.title}
+            </TableColumn>
+          )}
         </TableHeader>
         <TableBody>
           {sortedItems.map((user) => (
             <TableRow key={user._id}>
-              {headerColumns.map(({ key }) => (
-                <TableCell key={key}>
-                  {visibleColumns.has(key) && renderCell(user, key)}
+              {headerColumns.map((column) => (
+                <TableCell key={column.key}>
+                  {renderCell(user, column.key)}
                 </TableCell>
               ))}
             </TableRow>
