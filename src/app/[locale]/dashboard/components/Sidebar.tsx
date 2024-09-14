@@ -21,6 +21,7 @@ import { HiDocumentText, HiUsers } from "react-icons/hi2";
 import Link from "next/link";
 import { Button } from "@nextui-org/react";
 import Image from "next/image";
+import { PiPackageFill, PiPackageLight } from "react-icons/pi";
 
 interface SidebarProps {
   handleSidebar: () => void;
@@ -31,7 +32,12 @@ const Links = [
   {
     title: "Users",
     icon: HiUsers,
-    path: "/en/dashboard/users",
+    path: "/dashboard/users",
+  },
+  {
+    title: "Plans",
+    icon: PiPackageFill,
+    path: "/dashboard/plans",
   },
   // {
   //   title: "My Cover Letters",

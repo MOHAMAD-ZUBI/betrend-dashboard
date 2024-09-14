@@ -14,7 +14,6 @@ import {
   DropdownMenu,
   DropdownItem,
   Chip,
-  User,
   Pagination,
 } from "@nextui-org/react";
 import * as XLSX from "xlsx";
@@ -22,21 +21,15 @@ import client from "@/utils/client";
 import { toast, ToastContainer } from "react-toastify";
 import CustomModal from "@/components/CustomModal";
 
-// Define types for the user and permissions
-interface Permissions {
-  type: string[];
-}
-
-interface UserData {
+// Define types for the data
+interface Plan {
   _id: string;
-  userName: string;
-  email: string;
-  permissions?: Permissions;
-  isVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-  cameFrom?: string;
-  [key: string]: any; // Add index signature to handle dynamic properties
+  name: string;
+  description: string;
+  credits: number;
+  price: number;
+  isActive: boolean;
+  features: string[];
 }
 
 // Define the mapping for status colors
@@ -46,35 +39,40 @@ const statusColorMap: Record<any, "success" | "danger"> = {
 };
 
 const INITIAL_VISIBLE_COLUMNS: Set<string> = new Set([
-  "userName",
-  "email",
-  "permissions",
-  "isVerified",
+  "name",
+  "description",
+  "credits",
+  "price",
+  "isActive",
+  "features",
   "actions",
 ]);
+type Feature = string;
 
 const headerColumns = [
-  { key: "userName", title: "Username", allowSorting: true },
-  { key: "email", title: "Email", allowSorting: true },
-  { key: "permissions", title: "Permissions", allowSorting: false },
-  { key: "isVerified", title: "Verified", allowSorting: true },
+  { key: "name", title: "Plan Name", allowSorting: true },
+  { key: "description", title: "Description", allowSorting: true },
+  { key: "credits", title: "Credits", allowSorting: true },
+  { key: "price", title: "Price", allowSorting: true },
+  { key: "isActive", title: "Active", allowSorting: true },
+  { key: "features", title: "Features", allowSorting: false },
   { key: "actions", title: "Actions", allowSorting: false },
 ];
 
-export default function App({ apiData }: { apiData: UserData[] }) {
+export default function App({ apiData }: { apiData: Plan[] }) {
   const [filterValue, setFilterValue] = useState<string>("");
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     INITIAL_VISIBLE_COLUMNS
   );
   const [isVisible, setVisible] = useState<boolean>(false);
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState<number>(5);
   const [sortDescriptor, setSortDescriptor] = useState<{
-    column: keyof UserData;
+    column: keyof Plan;
     direction: "ascending" | "descending";
   }>({
-    column: "userName",
+    column: "name",
     direction: "ascending",
   });
   const [page, setPage] = useState<number>(1);
@@ -82,15 +80,15 @@ export default function App({ apiData }: { apiData: UserData[] }) {
   const hasSearchFilter = Boolean(filterValue);
 
   const filteredItems = useMemo(() => {
-    let filteredUsers = [...apiData];
+    let filteredPlans = [...apiData];
 
     if (hasSearchFilter) {
-      filteredUsers = filteredUsers.filter((user) =>
-        user.userName.toLowerCase().includes(filterValue.toLowerCase())
+      filteredPlans = filteredPlans.filter((plan) =>
+        plan.name.toLowerCase().includes(filterValue.toLowerCase())
       );
     }
 
-    return filteredUsers;
+    return filteredPlans;
   }, [filterValue]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
@@ -112,37 +110,34 @@ export default function App({ apiData }: { apiData: UserData[] }) {
     });
   }, [sortDescriptor, items]);
 
-  const renderCell = useCallback((user: UserData, columnKey: string) => {
-    const cellValue = user[columnKey as keyof UserData];
+  const onPageChange = (page: number) => {
+    setPage(page);
+  };
+
+  const renderCell = useCallback((plan: Plan, columnKey: string) => {
+    const cellValue = plan[columnKey as keyof Plan];
 
     switch (columnKey) {
-      case "userName":
-        return (
-          <User description={user.email} name={cellValue as string}>
-            {user.email}
-          </User>
-        );
-      case "permissions":
+      case "features":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">
-              {user?.permissions?.type?.join(", ") || "None"}
-            </p>
+            {plan.features.map((feature: Feature, index: number) => (
+              <p key={index} className="text-bold text-small capitalize">
+                {feature}
+              </p>
+            ))}
           </div>
         );
-      case "isVerified":
+      case "isActive":
         return (
           <Chip
             className="capitalize"
             //@ts-ignore
-            color={
-              //@ts-ignore
-              user.isVerified ? statusColorMap[true] : statusColorMap[false]
-            }
+            color={statusColorMap[plan.isActive]}
             size="sm"
             variant="flat"
           >
-            {user.isVerified ? "Verified" : "Not Verified"}
+            {plan.isActive ? "Active" : "Inactive"}
           </Chip>
         );
       case "actions":
@@ -158,7 +153,7 @@ export default function App({ apiData }: { apiData: UserData[] }) {
                 <DropdownItem>View</DropdownItem>
                 <DropdownItem>Edit</DropdownItem>
                 <DropdownItem>
-                  <button onClick={() => handleOpenModal(user)}>Delete</button>
+                  <button onClick={() => handleOpenModal(plan)}>Delete</button>
                 </DropdownItem>
               </DropdownMenu>
             </Dropdown>
@@ -209,15 +204,15 @@ export default function App({ apiData }: { apiData: UserData[] }) {
       header: headerColumns.map((col) => col.key),
     });
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Plans");
 
     // Create an Excel file and trigger the download
-    XLSX.writeFile(workbook, "UsersData.xlsx");
+    XLSX.writeFile(workbook, "PlansData.xlsx");
   }, [filteredItems]);
 
-  const handleOpenModal = (user: UserData) => {
-    console.log("Opening modal for user:", user);
-    setSelectedUser(user);
+  const handleOpenModal = (plan: Plan) => {
+    console.log("Opening modal for plan:", plan);
+    setSelectedPlan(plan);
     setVisible(true);
   };
 
@@ -226,26 +221,26 @@ export default function App({ apiData }: { apiData: UserData[] }) {
   };
 
   const handleDelete = async () => {
-    if (!selectedUser) return;
+    if (!selectedPlan) return;
 
     try {
-      await client.delete(`/users/${selectedUser._id}`);
-      toast.success("User deleted successfully!");
+      await client.delete(`/plans/${selectedPlan._id}`);
+      toast.success("Plan deleted successfully!");
       setVisible(false);
       // Trigger a re-fetch or update your local state here
     } catch (error) {
-      toast.error("Error deleting user");
+      toast.error("Error deleting plan");
     }
   };
 
   const topContent = useMemo(() => {
     return (
-      <div className="flex flex-col gap-4">
-        <div className="flex justify-between gap-3 items-end ">
+      <div className="flex flex-col gap-4 p-4">
+        <div className="flex justify-between gap-3 items-center mb-4">
           <Input
             isClearable
             className="w-full sm:max-w-[44%] text-gray-700"
-            placeholder="Search by name..."
+            placeholder="Search by plan name..."
             variant="faded"
             value={filterValue}
             onClear={onClear}
@@ -264,12 +259,12 @@ export default function App({ apiData }: { apiData: UserData[] }) {
         </div>
         <div className="flex justify-between items-center mb-4">
           <span className="text-default-400 font-semibold text-small">
-            Total {apiData.length} users
+            Total {apiData.length} plans
           </span>
           <label className="flex items-center font-semibold text-default-400 text-small">
             Rows per page:
             <select
-              className="bg-transparent outline-none text-default-400 text-small"
+              className="bg-transparent outline-none text-default-400 text-small ml-2"
               onChange={onRowsPerPageChange}
             >
               <option value="5">5</option>
@@ -289,93 +284,46 @@ export default function App({ apiData }: { apiData: UserData[] }) {
     handleExport,
   ]);
 
-  const bottomContent = useMemo(() => {
-    return (
-      <div className="py-2 px-2 flex justify-between items-center">
-        <span className="w-[30%] text-small text-default-400">
-          {selectedKeys.size === 0
-            ? "No items selected"
-            : `${selectedKeys.size} of ${filteredItems.length} selected`}
-        </span>
-        <Pagination
-          isCompact
-          showControls
-          color="success"
-          page={page}
-          total={pages}
-          onChange={setPage}
-        />
-        <div className="hidden sm:flex w-[30%] justify-end gap-2">
-          <Button
-            isDisabled={pages === 1}
-            onClick={onPreviousPage}
-            className=" text-white bg-gray-700"
-          >
-            Previous
-          </Button>
-          <Button
-            isDisabled={pages === 1}
-            onClick={onNextPage}
-            className="text-white bg-gray-700"
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    );
-  }, [
-    page,
-    pages,
-    selectedKeys.size,
-    filteredItems.length,
-    onNextPage,
-    onPreviousPage,
-  ]);
-
   return (
     <div className="p-4">
-      <ToastContainer
-        position="bottom-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+      <ToastContainer />
       <CustomModal
-        isOpen={isVisible}
+        isVisible={isVisible}
         onClose={handleCloseModal}
         onConfirm={handleDelete}
-        description={`Are you sure you want to delete user ${selectedUser?.userName}?`}
+        description="Are you sure you want to delete this plan? This action cannot be undone."
       />
-
       {topContent}
-      <Table aria-label="Table with multiple selectable rows">
-        <TableHeader columns={headerColumns}>
-          {(column) => (
-            //@ts-ignore
-            <TableColumn key={column.key} allowSorting={column.allowSorting}>
-              {column.title}
-            </TableColumn>
-          )}
-        </TableHeader>
-        <TableBody>
-          {sortedItems.map((user) => (
-            <TableRow key={user._id}>
-              {headerColumns.map((column) => (
-                <TableCell key={column.key}>
-                  {renderCell(user, column.key)}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {bottomContent}
+      <div className="overflow-x-auto">
+        <Table aria-label="Plans Table" className="w-full">
+          <TableHeader columns={headerColumns}>
+            {(column) => (
+              <TableColumn key={column.key}>{column.title}</TableColumn>
+            )}
+          </TableHeader>
+          <TableBody>
+            {sortedItems.map((plan) => (
+              <TableRow key={plan._id}>
+                {headerColumns.map((column) => (
+                  <TableCell key={column.key}>
+                    {visibleColumns.has(column.key)
+                      ? renderCell(plan, column.key)
+                      : null}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex justify-center mt-4">
+        <Pagination
+          page={page}
+          onChange={onPageChange}
+          total={pages}
+          className="mt-4"
+        />
+      </div>
     </div>
   );
 }
