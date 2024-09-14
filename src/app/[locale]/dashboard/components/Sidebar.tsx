@@ -17,7 +17,7 @@ import SidebarLink from "./SidebarLink";
 import { FaCrown } from "react-icons/fa6";
 import { RiVipCrown2Fill } from "react-icons/ri";
 
-import { HiDocumentText } from "react-icons/hi2";
+import { HiDocumentText, HiUsers } from "react-icons/hi2";
 import Link from "next/link";
 import { Button } from "@nextui-org/react";
 import Image from "next/image";
@@ -28,11 +28,11 @@ interface SidebarProps {
 
 const Links = [
   { title: "Dashboard", icon: MdDashboard, path: "/dashboard" },
-  // {
-  //   title: "My Resumes",
-  //   icon: HiDocumentText,
-  //   path: "/dashboard/resumes",
-  // },
+  {
+    title: "Users",
+    icon: HiUsers,
+    path: "/en/dashboard/users",
+  },
   // {
   //   title: "My Cover Letters",
   //   icon: FaEnvelopeOpenText,
