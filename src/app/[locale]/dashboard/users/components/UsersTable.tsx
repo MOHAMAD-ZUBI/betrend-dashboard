@@ -347,7 +347,7 @@ export default function App({ apiData }: { apiData: UserData[] }) {
         theme="light"
       />
       <CustomModal
-        isOpen={isVisible}
+        isVisible={isVisible}
         onClose={handleCloseModal}
         onConfirm={handleDelete}
         description={`Are you sure you want to delete user ${selectedUser?.userName}?`}

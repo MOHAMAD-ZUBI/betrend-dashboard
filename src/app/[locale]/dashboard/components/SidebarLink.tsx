@@ -24,7 +24,7 @@ const SidebarLink: FC<SidebarLinkProps> = ({ Icon, path, title }) => {
     <Link
       href={path}
       className={cn(
-        "text-black group font-[450] text-[18px] flex flex-row items-center justify-between px-4 py-3 rounded-2xl duration-300 hover:bg-primaryDashboard hover:text-white ",
+        "text-black group font-[450] text-[18px] flex flex-row items-center justify-between px-4 py-3 rounded-2xl duration-300 hover:bg-primaryDashboard hover:text-gray-800 ",
         isActive(path)
       )}
     >

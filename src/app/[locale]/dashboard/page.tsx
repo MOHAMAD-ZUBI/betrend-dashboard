@@ -6,8 +6,14 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  // Fetch analytics data on the server side
-  const { data } = await client.get("/analytics/all");
+  let data = null;
+
+  try {
+    const response = await client.get("/analytics/all");
+    data = response.data;
+  } catch (error) {
+    console.error("Error fetching analytics data:", error);
+  }
 
   return (
     <div className="container mx-auto">

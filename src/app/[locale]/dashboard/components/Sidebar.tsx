@@ -32,20 +32,13 @@ const Links = [
   {
     title: "Users",
     icon: HiUsers,
-    path: "/dashboard/users",
+    path: "/en/dashboard/users",
   },
   {
     title: "Plans",
     icon: PiPackageFill,
-    path: "/dashboard/plans",
+    path: "/en//dashboard/plans",
   },
-  // {
-  //   title: "My Cover Letters",
-  //   icon: FaEnvelopeOpenText,
-  //   path: "/dashboard/covers",
-  // },
-
-  // { title: "Credits", icon: RiVipCrown2Fill, path: "/dashboard/credits" },
 ];
 const Sidebar: FC<SidebarProps> = ({ handleSidebar }) => {
   return (
