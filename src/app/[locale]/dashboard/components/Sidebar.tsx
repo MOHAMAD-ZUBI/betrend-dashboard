@@ -21,7 +21,12 @@ import { HiDocumentText, HiUsers } from "react-icons/hi2";
 import Link from "next/link";
 import { Button } from "@nextui-org/react";
 import Image from "next/image";
-import { PiPackageFill, PiPackageLight } from "react-icons/pi";
+import {
+  PiContactlessPaymentFill,
+  PiFileJpgBold,
+  PiPackageFill,
+  PiPackageLight,
+} from "react-icons/pi";
 
 interface SidebarProps {
   handleSidebar: () => void;
@@ -38,6 +43,16 @@ const Links = [
     title: "Plans",
     icon: PiPackageFill,
     path: "/en//dashboard/plans",
+  },
+  {
+    title: "Subscriptions",
+    icon: PiContactlessPaymentFill,
+    path: "/en//dashboard/subscriptions",
+  },
+  {
+    title: "Jobs",
+    icon: PiFileJpgBold,
+    path: "/en//dashboard/jobs",
   },
 ];
 const Sidebar: FC<SidebarProps> = ({ handleSidebar }) => {
