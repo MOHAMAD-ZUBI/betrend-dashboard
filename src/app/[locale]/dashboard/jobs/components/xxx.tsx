@@ -19,52 +19,77 @@ import {
 import * as XLSX from "xlsx";
 import client from "@/utils/client";
 import { toast, ToastContainer } from "react-toastify";
-import CustomModal from "@/components/CustomModal";
+// import CustomModal from "./CustomModal";
 
+// Define types for the data
 interface Job {
   _id: string;
   title: string;
-  company: { name: string; location: string };
-  salary: { min: number; max: number; currency: string };
   jobDescription: string;
   requirements: string[];
   responsibilities: string[];
+  location: string;
+  company: {
+    name: string;
+    location: string;
+  };
+  salary: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  isRemote: boolean;
   employmentType: string;
   experienceLevel: string;
   benefits: string[];
   deadline: string;
   tags: string[];
-  isRemote: boolean;
-  postedDate: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-const headerColumns = [
-  { key: "title", title: "Job Title", allowSorting: true },
-  { key: "company", title: "Company", allowSorting: true },
-  { key: "location", title: "Location", allowSorting: true },
-  { key: "salary", title: "Salary", allowSorting: true },
-  { key: "employmentType", title: "Type", allowSorting: true },
-  { key: "experienceLevel", title: "Experience", allowSorting: true },
-  { key: "isRemote", title: "Remote", allowSorting: true },
-  { key: "postedDate", title: "Posted Date", allowSorting: true },
-  { key: "actions", title: "Actions", allowSorting: false },
-];
+// Define the mapping for status colors
+const statusColorMap: { [key: string]: "success" | "danger" } = {
+  true: "success",
+  false: "danger",
+};
 
-const INITIAL_VISIBLE_COLUMNS = new Set([
+const INITIAL_VISIBLE_COLUMNS: Set<string> = new Set([
   "title",
-  "company",
+  "jobDescription",
+  "requirements",
+  "responsibilities",
   "location",
+  "company",
   "salary",
+  "isRemote",
   "employmentType",
   "experienceLevel",
-  "isRemote",
-  "postedDate",
+  "benefits",
+  "deadline",
+  "tags",
   "actions",
 ]);
 
+const headerColumns = [
+  { key: "title", title: "Title", allowSorting: true },
+  { key: "jobDescription", title: "Description", allowSorting: true },
+  { key: "requirements", title: "Requirements", allowSorting: false },
+  { key: "responsibilities", title: "Responsibilities", allowSorting: false },
+  { key: "location", title: "Location", allowSorting: false },
+  { key: "company", title: "Company", allowSorting: false },
+  { key: "salary", title: "Salary", allowSorting: false },
+  { key: "isRemote", title: "Remote", allowSorting: true },
+  { key: "employmentType", title: "Employment Type", allowSorting: false },
+  { key: "experienceLevel", title: "Experience Level", allowSorting: false },
+  { key: "benefits", title: "Benefits", allowSorting: false },
+  { key: "deadline", title: "Deadline", allowSorting: true },
+  { key: "tags", title: "Tags", allowSorting: false },
+  { key: "actions", title: "Actions", allowSorting: false },
+];
+
 export default function JobsTable({ apiData }: { apiData: Job[] }) {
+  console.log({ apiData });
   const [filterValue, setFilterValue] = useState<string>("");
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
@@ -82,6 +107,30 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
   });
   const [page, setPage] = useState<number>(1);
 
+  const [isAddModalVisible, setAddModalVisible] = useState<boolean>(false);
+  const [newJob, setNewJob] = useState<Partial<Job>>({
+    title: "",
+    jobDescription: "",
+    requirements: [],
+    responsibilities: [],
+    location: "",
+    company: {
+      name: "",
+      location: "",
+    },
+    salary: {
+      min: 0,
+      max: 0,
+      currency: "",
+    },
+    isRemote: false,
+    employmentType: "",
+    experienceLevel: "",
+    benefits: [],
+    deadline: "",
+    tags: [],
+  });
+
   const hasSearchFilter = Boolean(filterValue);
 
   const filteredItems = useMemo(() => {
@@ -93,7 +142,23 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
       );
     }
 
-    return filteredJobs;
+    // Ensure all required fields are present
+    return filteredJobs.map((job) => ({
+      _id: job._id,
+      title: job.title || "",
+      jobDescription: job.jobDescription || "",
+      requirements: job.requirements || [],
+      responsibilities: job.responsibilities || [],
+      location: job.location || "",
+      company: job.company || { name: "", location: "" },
+      salary: job.salary || { min: 0, max: 0, currency: "" },
+      isRemote: job.isRemote || false,
+      employmentType: job.employmentType || "",
+      experienceLevel: job.experienceLevel || "",
+      benefits: job.benefits || [],
+      deadline: job.deadline || "",
+      tags: job.tags || [],
+    }));
   }, [filterValue, apiData, hasSearchFilter]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
@@ -107,7 +172,9 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
+      //@ts-ignore
       const first = a[sortDescriptor.column];
+      //@ts-ignore
       const second = b[sortDescriptor.column];
       const cmp = first < second ? -1 : first > second ? 1 : 0;
 
@@ -115,27 +182,46 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
     });
   }, [sortDescriptor, items]);
 
+  const onPageChange = (page: number) => {
+    setPage(page);
+  };
+
   const renderCell = useCallback((job: Job, columnKey: string) => {
+    const cellValue = job[columnKey as keyof Job];
+
     switch (columnKey) {
-      case "company":
-        return job.company.name;
-      case "location":
-        return job.company.location;
-      case "salary":
-        return `${job.salary.currency} ${job.salary.min} - ${job.salary.max}`;
       case "isRemote":
         return (
           <Chip
             className="capitalize"
-            color={job.isRemote ? "success" : "default"}
+            color={statusColorMap[job.isRemote ? "true" : "false"]}
             size="sm"
             variant="flat"
           >
             {job.isRemote ? "Remote" : "On-site"}
           </Chip>
         );
-      case "postedDate":
-        return new Date(job.postedDate).toLocaleDateString();
+      case "requirements":
+      case "responsibilities":
+      case "benefits":
+      case "tags":
+        return (
+          <ul>
+            {((cellValue as string[]) || []).map(
+              (item: string, index: number) => (
+                <li key={index}>{item}</li>
+              )
+            )}
+          </ul>
+        );
+      case "salary":
+        return cellValue
+          ? //@ts-ignore
+            `${cellValue.min} - ${cellValue.max} ${cellValue.currency}`
+          : "N/A";
+      case "company":
+        //@ts-ignore
+        return cellValue ? `${cellValue.name}, ${cellValue.location}` : "N/A";
       case "actions":
         return (
           <div className="relative flex justify-start items-center gap-2">
@@ -156,13 +242,9 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
           </div>
         );
       default:
-        return job[columnKey as keyof Job] as React.ReactNode;
+        return cellValue != null ? cellValue.toString() : "N/A";
     }
   }, []);
-
-  const onPageChange = (page: number) => {
-    setPage(page);
-  };
 
   const onNextPage = useCallback(() => {
     if (page < pages) {
@@ -199,17 +281,21 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
   }, []);
 
   const handleExport = useCallback(() => {
+    const headers = headerColumns
+      .filter((column) => visibleColumns.has(column.key)) // Include only visible columns
+      .map((column) => column.key);
+
     const worksheet = XLSX.utils.json_to_sheet(filteredItems, {
-      header: headerColumns.map((col) => col.key),
+      header: headers,
     });
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Jobs");
 
     XLSX.writeFile(workbook, "JobsData.xlsx");
-  }, [filteredItems]);
+  }, [filteredItems, visibleColumns]);
 
   const handleOpenModal = (job: Job) => {
-    console.log("Opening modal for job:", job);
     setSelectedJob(job);
     setVisible(true);
   };
@@ -227,7 +313,18 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
       setVisible(false);
       // Trigger a re-fetch or update your local state here
     } catch (error) {
-      toast.error("Error deleting job");
+      toast.error("Error deleting job!");
+    }
+  };
+
+  const handleAddJob = async () => {
+    try {
+      await client.post("/jobs", newJob);
+      toast.success("Job added successfully!");
+      setAddModalVisible(false);
+      // Trigger a re-fetch or update your local state here
+    } catch (error) {
+      toast.error("Error adding job!");
     }
   };
 
@@ -245,7 +342,12 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
             onValueChange={onSearchChange}
           />
           <div className="flex gap-3">
-            <Button className="text-white bg-gray-700">Add New</Button>
+            <Button
+              className="text-white bg-gray-700"
+              onClick={() => setAddModalVisible(true)}
+            >
+              Add New
+            </Button>
             <Button
               color="primary"
               onClick={handleExport}
@@ -263,65 +365,79 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
             Rows per page:
             <select
               className="bg-transparent outline-none text-default-400 text-small ml-2"
+              value={rowsPerPage}
               onChange={onRowsPerPageChange}
             >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
             </select>
           </label>
         </div>
       </div>
     );
-  }, [
-    filterValue,
-    onRowsPerPageChange,
-    apiData.length,
-    onSearchChange,
-    onClear,
-    handleExport,
-  ]);
+  }, [apiData.length, filterValue, rowsPerPage]);
 
   return (
-    <div className="p-4">
+    <>
       <ToastContainer />
-      <CustomModal
-        isVisible={isVisible}
-        onClose={handleCloseModal}
-        onConfirm={handleDelete}
-        description="Are you sure you want to delete this job? This action cannot be undone."
-      />
       {topContent}
-      <div className="overflow-x-auto">
-        <Table aria-label="Jobs Table" className="w-full">
-          <TableHeader columns={headerColumns}>
-            {(column) => (
-              <TableColumn key={column.key}>{column.title}</TableColumn>
-            )}
+      <div className="p-4">
+        <Table aria-label="Jobs Table" className=" w-full">
+          <TableHeader>
+            {headerColumns
+              .filter((column) => visibleColumns.has(column.key))
+              .map((column) => (
+                //@ts-ignore
+                <TableColumn
+                  key={column.key}
+                  //@ts-ignore
+                  allowSorting={column.allowSorting}
+                >
+                  {column.title}
+                </TableColumn>
+              ))}
           </TableHeader>
           <TableBody>
-            {sortedItems.map((job) => (
-              <TableRow key={job._id}>
-                {headerColumns.map((column) => (
-                  <TableCell key={column.key}>
-                    {visibleColumns.has(column.key)
-                      ? renderCell(job, column.key)
-                      : null}
-                  </TableCell>
-                ))}
+            {sortedItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={headerColumns.length}>
+                  No data available
+                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              sortedItems.map((job) => (
+                <TableRow key={job._id}>
+                  {headerColumns
+                    .filter((column) => visibleColumns.has(column.key))
+                    .map((column) => (
+                      <TableCell key={column.key}>
+                        {renderCell(job, column.key)}
+                      </TableCell>
+                    ))}
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
+        <div className=" flex justify-center flex-row mt-2">
+          <Pagination
+            total={pages}
+            initialPage={1}
+            page={page}
+            onChange={onPageChange}
+            // onNext={onNextPage}
+            // onPrevious={onPreviousPage}
+          />
+        </div>
       </div>
-      <div className="flex justify-center mt-4">
-        <Pagination
-          page={page}
-          onChange={onPageChange}
-          total={pages}
-          className="mt-4"
-        />
-      </div>
-    </div>
+      {/* Add your modals here */}
+      {/* <CustomModal 
+        visible={isVisible} 
+        onClose={handleCloseModal} 
+        onDelete={handleDelete}
+        job={selectedJob}
+      /> */}
+    </>
   );
 }

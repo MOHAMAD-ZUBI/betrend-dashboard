@@ -7,12 +7,13 @@ import {
   MdClose,
   MdOutlineLogout,
   MdOutlineKeyboardArrowRight,
+  MdPayments,
 } from "react-icons/md";
 import { RiListSettingsFill } from "react-icons/ri";
 import { FaEnvelopeOpenText } from "react-icons/fa6";
 
 import { FcWorkflow } from "react-icons/fc";
-import { BsStars } from "react-icons/bs";
+import { BsBagDashFill, BsStars } from "react-icons/bs";
 import SidebarLink from "./SidebarLink";
 import { FaCrown } from "react-icons/fa6";
 import { RiVipCrown2Fill } from "react-icons/ri";
@@ -46,12 +47,12 @@ const Links = [
   },
   {
     title: "Subscriptions",
-    icon: PiContactlessPaymentFill,
+    icon: MdPayments,
     path: "/en//dashboard/subscriptions",
   },
   {
     title: "Jobs",
-    icon: PiFileJpgBold,
+    icon: BsBagDashFill,
     path: "/en//dashboard/jobs",
   },
 ];
