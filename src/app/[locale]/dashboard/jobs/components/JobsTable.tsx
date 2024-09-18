@@ -15,6 +15,8 @@ import {
   DropdownItem,
   Chip,
   Pagination,
+  Select,
+  SelectItem,
 } from "@nextui-org/react";
 import * as XLSX from "xlsx";
 import client from "@/utils/client";
@@ -38,6 +40,7 @@ interface Job {
   postedDate: string;
   createdAt: string;
   updatedAt: string;
+  isActive?: boolean;
 }
 
 const headerColumns = [
@@ -81,6 +84,10 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
     direction: "ascending",
   });
   const [page, setPage] = useState<number>(1);
+  const [remoteFilter, setRemoteFilter] = useState<string>("all");
+  const [employmentTypeFilter, setEmploymentTypeFilter] =
+    useState<string>("all");
+  const [activeFilter, setActiveFilter] = useState<string>("all");
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -93,8 +100,35 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
       );
     }
 
+    if (remoteFilter !== "all") {
+      filteredJobs = filteredJobs.filter(
+        (job) => job.isRemote === (remoteFilter === "remote")
+      );
+    }
+
+    if (employmentTypeFilter !== "all") {
+      filteredJobs = filteredJobs.filter(
+        (job) =>
+          job.employmentType.toLowerCase() ===
+          employmentTypeFilter.toLowerCase()
+      );
+    }
+
+    if (activeFilter !== "all") {
+      filteredJobs = filteredJobs.filter(
+        (job) => job.isActive === (activeFilter === "active")
+      );
+    }
+
     return filteredJobs;
-  }, [filterValue, apiData, hasSearchFilter]);
+  }, [
+    filterValue,
+    apiData,
+    hasSearchFilter,
+    remoteFilter,
+    employmentTypeFilter,
+    activeFilter,
+  ]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -109,6 +143,7 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
     return [...items].sort((a, b) => {
       const first = a[sortDescriptor.column];
       const second = b[sortDescriptor.column];
+      //@ts-ignore
       const cmp = first < second ? -1 : first > second ? 1 : 0;
 
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
@@ -234,7 +269,7 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
   const topContent = useMemo(() => {
     return (
       <div className="flex flex-col gap-4 p-4">
-        <div className="flex justify-between gap-3 items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between gap-3 items-center mb-4">
           <Input
             isClearable
             className="w-full sm:max-w-[44%] text-gray-700"
@@ -255,9 +290,59 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
             </Button>
           </div>
         </div>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-wrap gap-3 justify-end">
+          <Select
+            placeholder="Remote"
+            className="max-w-xs min-w-[150px]"
+            onChange={(e) => setRemoteFilter(e.target.value)}
+          >
+            <SelectItem key="all" value="all">
+              All
+            </SelectItem>
+            <SelectItem key="remote" value="remote">
+              Remote
+            </SelectItem>
+            <SelectItem key="onsite" value="onsite">
+              On-site
+            </SelectItem>
+          </Select>
+          <Select
+            placeholder="Employment Type"
+            className="max-w-xs min-w-[150px]"
+            onChange={(e) => setEmploymentTypeFilter(e.target.value)}
+          >
+            <SelectItem key="all" value="all">
+              All
+            </SelectItem>
+            <SelectItem key="fulltime" value="fulltime">
+              Full-time
+            </SelectItem>
+            <SelectItem key="parttime" value="parttime">
+              Part-time
+            </SelectItem>
+            <SelectItem key="contract" value="contract">
+              Contract
+            </SelectItem>
+          </Select>
+          <Select
+            placeholder="Active Status"
+            className="max-w-xs min-w-[150px]"
+            onChange={(e) => setActiveFilter(e.target.value)}
+          >
+            <SelectItem key="all" value="all">
+              All
+            </SelectItem>
+            <SelectItem key="active" value="active">
+              Active
+            </SelectItem>
+            <SelectItem key="inactive" value="inactive">
+              Inactive
+            </SelectItem>
+          </Select>
+        </div>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4">
           <span className="text-default-400 font-semibold text-small">
-            Total {apiData.length} jobs
+            Total {filteredItems.length} jobs
           </span>
           <label className="flex items-center font-semibold text-default-400 text-small">
             Rows per page:
@@ -276,10 +361,13 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
   }, [
     filterValue,
     onRowsPerPageChange,
-    apiData.length,
+    filteredItems.length,
     onSearchChange,
     onClear,
     handleExport,
+    remoteFilter,
+    employmentTypeFilter,
+    activeFilter,
   ]);
 
   return (
