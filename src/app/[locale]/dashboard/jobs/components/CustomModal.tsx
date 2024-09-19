@@ -5,7 +5,6 @@ import {
   ModalHeader,
   ModalContent,
   ModalFooter,
-  Input,
   Button,
 } from "@nextui-org/react";
 

@@ -21,7 +21,9 @@ import {
 import * as XLSX from "xlsx";
 import client from "@/utils/client";
 import { toast, ToastContainer } from "react-toastify";
-import CustomModal from "@/components/CustomModal";
+import CustomModal from "./CustomModal";
+import CreateJobForm from "./AddJobForm";
+import DisplayJob from "./DisplayJob";
 
 interface Job {
   _id: string;
@@ -88,6 +90,18 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
   const [employmentTypeFilter, setEmploymentTypeFilter] =
     useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [isAddJobModalOpen, setIsAddJobModalOpen] = useState(false);
+  const [isDisplayJobModalOpen, setIsDisplayJobModalOpen] = useState(false);
+
+  const handleOpenDisplayJobModal = useCallback((job: Job) => {
+    setSelectedJob(job);
+    setIsDisplayJobModalOpen(true);
+  }, []);
+
+  const handleCloseDisplayJobModal = useCallback(() => {
+    setIsDisplayJobModalOpen(false);
+    setSelectedJob(null);
+  }, []);
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -181,7 +195,11 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem>View</DropdownItem>
+                <DropdownItem>
+                  <button onClick={() => handleOpenDisplayJobModal(job)}>
+                    View
+                  </button>
+                </DropdownItem>
                 <DropdownItem>Edit</DropdownItem>
                 <DropdownItem>
                   <button onClick={() => handleOpenModal(job)}>Delete</button>
@@ -198,18 +216,6 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
   const onPageChange = (page: number) => {
     setPage(page);
   };
-
-  const onNextPage = useCallback(() => {
-    if (page < pages) {
-      setPage(page + 1);
-    }
-  }, [page, pages]);
-
-  const onPreviousPage = useCallback(() => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
-  }, [page]);
 
   const onRowsPerPageChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -244,7 +250,6 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
   }, [filteredItems]);
 
   const handleOpenModal = (job: Job) => {
-    console.log("Opening modal for job:", job);
     setSelectedJob(job);
     setVisible(true);
   };
@@ -266,6 +271,22 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
     }
   };
 
+  const handleOpenAddJobModal = () => {
+    setIsAddJobModalOpen(true);
+  };
+
+  const handleCloseAddJobModal = () => {
+    setIsAddJobModalOpen(false);
+  };
+
+  const handleAddJob = (jobData: any) => {
+    // Handle adding the job to your data
+    console.log("New job data:", jobData);
+    // You would typically send this data to your API here
+    // Then close the modal
+    handleCloseAddJobModal();
+  };
+
   const topContent = useMemo(() => {
     return (
       <div className="flex flex-col gap-4 p-4">
@@ -280,7 +301,12 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
             onValueChange={onSearchChange}
           />
           <div className="flex gap-3">
-            <Button className="text-white bg-gray-700">Add New</Button>
+            <Button
+              className="text-white bg-gray-700"
+              onClick={handleOpenAddJobModal}
+            >
+              Add New
+            </Button>
             <Button
               color="primary"
               onClick={handleExport}
@@ -293,7 +319,9 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
         <div className="flex flex-wrap gap-3 justify-end">
           <Select
             placeholder="Remote"
-            className="max-w-xs min-w-[150px]"
+            className={`max-w-xs min-w-[150px] ${
+              remoteFilter !== "all" ? "border-primary" : ""
+            }`}
             onChange={(e) => setRemoteFilter(e.target.value)}
           >
             <SelectItem key="all" value="all">
@@ -308,7 +336,9 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
           </Select>
           <Select
             placeholder="Employment Type"
-            className="max-w-xs min-w-[150px]"
+            className={`max-w-xs min-w-[150px] ${
+              employmentTypeFilter !== "all" ? "border-primary" : ""
+            }`}
             onChange={(e) => setEmploymentTypeFilter(e.target.value)}
           >
             <SelectItem key="all" value="all">
@@ -326,7 +356,9 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
           </Select>
           <Select
             placeholder="Active Status"
-            className="max-w-xs min-w-[150px]"
+            className={`max-w-xs min-w-[150px] ${
+              activeFilter !== "all" ? "border-primary" : ""
+            }`}
             onChange={(e) => setActiveFilter(e.target.value)}
           >
             <SelectItem key="all" value="all">
@@ -374,11 +406,30 @@ export default function JobsTable({ apiData }: { apiData: Job[] }) {
     <div className="p-4">
       <ToastContainer />
       <CustomModal
-        isVisible={isVisible}
+        isOpen={isVisible}
         onClose={handleCloseModal}
-        onConfirm={handleDelete}
-        description="Are you sure you want to delete this job? This action cannot be undone."
-      />
+        title="Confirm Delete"
+        onSubmit={handleDelete}
+      >
+        <p>
+          Are you sure you want to delete this job? This action cannot be
+          undone.
+        </p>
+      </CustomModal>
+      <CustomModal
+        isOpen={isDisplayJobModalOpen}
+        onClose={handleCloseDisplayJobModal}
+        title="View Job"
+      >
+        <DisplayJob job={selectedJob ?? ({} as Job)} />
+      </CustomModal>
+      <CustomModal
+        isOpen={isAddJobModalOpen}
+        onClose={handleCloseAddJobModal}
+        title="Add New Job"
+      >
+        <CreateJobForm onSubmit={handleAddJob} />
+      </CustomModal>
       {topContent}
       <div className="overflow-x-auto">
         <Table aria-label="Jobs Table" className="w-full">
